@@ -19,3 +19,4 @@ Makefile.gyp
 *.project
 .idea
 test.js
+.DS_Store

@@ -160,8 +160,12 @@ NAN_METHOD(PtyFork) {
       "Usage: pty.fork(file, args, env, cwd, cols, rows, uid, gid, onexit)");
   }
 
+  auto iso = info.GetIsolate();
+  auto ctx = iso->GetCurrentContext();
+
   // file
-  String::Utf8Value file(info[0]->ToString());
+  String::Utf8Value file(iso, info[0]->ToString(iso));
+  // 
 
   // args
   int i = 0;
@@ -172,7 +176,7 @@ NAN_METHOD(PtyFork) {
   argv[0] = strdup(*file);
   argv[argl-1] = NULL;
   for (; i < argc; i++) {
-    String::Utf8Value arg(argv_->Get(Nan::New<Integer>(i))->ToString());
+    String::Utf8Value arg(iso, argv_->Get(Nan::New<Integer>(i))->ToString(iso));
     argv[i+1] = strdup(*arg);
   }
 
@@ -183,24 +187,24 @@ NAN_METHOD(PtyFork) {
   char **env = new char*[envc+1];
   env[envc] = NULL;
   for (; i < envc; i++) {
-    String::Utf8Value pair(env_->Get(Nan::New<Integer>(i))->ToString());
+    String::Utf8Value pair(iso, env_->Get(Nan::New<Integer>(i))->ToString(iso));
     env[i] = strdup(*pair);
   }
 
   // cwd
-  String::Utf8Value cwd_(info[3]->ToString());
+  String::Utf8Value cwd_(iso, info[3]->ToString(iso));
   char *cwd = strdup(*cwd_);
 
   // size
   struct winsize winp;
-  winp.ws_col = info[4]->IntegerValue();
-  winp.ws_row = info[5]->IntegerValue();
+  winp.ws_col = info[4]->IntegerValue(ctx).ToChecked();
+  winp.ws_row = info[5]->IntegerValue(ctx).ToChecked();
   winp.ws_xpixel = 0;
   winp.ws_ypixel = 0;
 
   // uid / gid
-  int uid = info[6]->IntegerValue();
-  int gid = info[7]->IntegerValue();
+  int uid = info[6]->IntegerValue(ctx).ToChecked();
+  int gid = info[7]->IntegerValue(ctx).ToChecked();
 
   // fork the pty
   int master = -1;
@@ -283,10 +287,12 @@ NAN_METHOD(PtyOpen) {
     return Nan::ThrowError("Usage: pty.open(cols, rows)");
   }
 
+  auto iso = info.GetIsolate();
+  auto ctx = iso->GetCurrentContext();
   // size
   struct winsize winp;
-  winp.ws_col = info[0]->IntegerValue();
-  winp.ws_row = info[1]->IntegerValue();
+  winp.ws_col = info[0]->IntegerValue(ctx).ToChecked();
+  winp.ws_row = info[1]->IntegerValue(ctx).ToChecked();
   winp.ws_xpixel = 0;
   winp.ws_ypixel = 0;
 
@@ -336,11 +342,13 @@ NAN_METHOD(PtyResize) {
     return Nan::ThrowError("Usage: pty.resize(fd, cols, rows)");
   }
 
-  int fd = info[0]->IntegerValue();
+  auto iso = info.GetIsolate();
+  auto ctx = iso->GetCurrentContext();
+  int fd = info[0]->IntegerValue(ctx).ToChecked();
 
   struct winsize winp;
-  winp.ws_col = info[1]->IntegerValue();
-  winp.ws_row = info[2]->IntegerValue();
+  winp.ws_col = info[1]->IntegerValue(ctx).ToChecked();
+  winp.ws_row = info[2]->IntegerValue(ctx).ToChecked();
   winp.ws_xpixel = 0;
   winp.ws_ypixel = 0;
 
@@ -366,9 +374,11 @@ NAN_METHOD(PtyGetProc) {
     return Nan::ThrowError("Usage: pty.process(fd, tty)");
   }
 
-  int fd = info[0]->IntegerValue();
+  auto iso = info.GetIsolate();
+  auto ctx = iso->GetCurrentContext();
+  int fd = info[0]->IntegerValue(ctx).ToChecked();
 
-  String::Utf8Value tty_(info[1]->ToString());
+  String::Utf8Value tty_(iso, info[1]->ToString(iso));
   char *tty = strdup(*tty_);
   char *name = pty_getproc(fd, tty);
   free(tty);
@@ -679,18 +689,21 @@ pty_forkpty(int *amaster, char *name,
 
 NAN_MODULE_INIT(init) {
   Nan::HandleScope scope;
+  auto iso = Isolate::GetCurrent();
+  auto ctx = iso->GetCurrentContext();
+
   Nan::Set(target,
     Nan::New<String>("fork").ToLocalChecked(),
-    Nan::New<FunctionTemplate>(PtyFork)->GetFunction());
+    Nan::New<FunctionTemplate>(PtyFork)->GetFunction(ctx).ToLocalChecked());
   Nan::Set(target,
     Nan::New<String>("open").ToLocalChecked(),
-    Nan::New<FunctionTemplate>(PtyOpen)->GetFunction());
+    Nan::New<FunctionTemplate>(PtyOpen)->GetFunction(ctx).ToLocalChecked());
   Nan::Set(target,
     Nan::New<String>("resize").ToLocalChecked(),
-    Nan::New<FunctionTemplate>(PtyResize)->GetFunction());
+    Nan::New<FunctionTemplate>(PtyResize)->GetFunction(ctx).ToLocalChecked());
   Nan::Set(target,
     Nan::New<String>("process").ToLocalChecked(),
-    Nan::New<FunctionTemplate>(PtyGetProc)->GetFunction());
+    Nan::New<FunctionTemplate>(PtyGetProc)->GetFunction(ctx).ToLocalChecked());
 }
 
 NODE_MODULE(pty, init)
