@@ -1,8 +1,8 @@
 {
-	"name": "ptyjs2",
+	"name": "pty.node",
 	"description": "Pseudo terminals for node.",
 	"author": "Christopher Jeffrey",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"license": "MIT",
 	"main": "./index.js",
 	"repository": "git@github.com:louis-tru/pty.js.git",
